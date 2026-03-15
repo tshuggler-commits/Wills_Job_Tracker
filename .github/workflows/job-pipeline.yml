@@ -1,0 +1,41 @@
+name: Job Discovery + Review Pipeline
+
+# Runs at 11 AM UTC daily = 6 AM EST / 7 AM EDT
+# Before the daily digest at 8 AM ET, giving 1-2 hours buffer
+on:
+  schedule:
+    - cron: "0 11 * * *"
+  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  discover-and-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install discovery dependencies
+        run: pip install -r discovery/requirements.txt
+
+      - name: Install review dependencies
+        run: pip install -r review/requirements.txt
+
+      - name: Run job discovery pipeline
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: python -m discovery.discover run
+
+      - name: Run job status review + archive
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_ARCHIVE_DB_ID: ${{ secrets.NOTION_ARCHIVE_DB_ID }}
+        run: python -m review.review run
