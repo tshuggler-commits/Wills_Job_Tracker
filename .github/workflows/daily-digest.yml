@@ -1,11 +1,12 @@
 name: Daily Job Digest
 
-# Runs at 1 PM UTC daily = 8 AM EST / 9 AM EDT
-# One hour after the job search pipeline (7 AM ET) to ensure Notion is populated
+# DISABLED: Apps Script handles the daily digest now (script.google.com)
+# Schedule removed to stop failing runs (missing GMAIL_APP_PASSWORD secret)
+# on:
+#   schedule:
+#     - cron: "0 13 * * *"
 on:
-  schedule:
-    - cron: "0 13 * * *"
-  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch: # manual trigger only, in case you ever need it
 
 jobs:
   send-digest:
