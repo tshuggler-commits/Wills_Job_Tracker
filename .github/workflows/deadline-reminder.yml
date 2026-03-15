@@ -1,10 +1,12 @@
 name: Deadline Reminder
 
-# Runs at 2 PM UTC daily = 9 AM EST / 10 AM EDT
+# DISABLED: Apps Script sendDeadlineReminder handles this now (script.google.com)
+# Schedule removed — moved to Apps Script to avoid GMAIL_APP_PASSWORD dependency
+# on:
+#   schedule:
+#     - cron: "0 14 * * *"
 on:
-  schedule:
-    - cron: "0 14 * * *"
-  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch: # manual trigger only, in case you ever need it
 
 jobs:
   send-reminder:
