@@ -112,6 +112,11 @@ def _build_archive_properties(page, close_reason):
     applied_val = extract_property(page, "Applied")
     properties["Applied"] = _checkbox_prop(applied_val)
 
+    # Copy Dismissed Reason if present
+    dismissed_reason = extract_property(page, "Dismissed Reason")
+    if dismissed_reason:
+        properties["Dismissed Reason"] = _text_prop(dismissed_reason)
+
     # Archive-specific fields
     properties["Date Archived"] = {"date": {"start": today}}
     properties["Close Reason"] = {"select": {"name": close_reason}}

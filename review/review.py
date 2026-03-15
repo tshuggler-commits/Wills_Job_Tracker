@@ -50,6 +50,12 @@ def _get_jobs_to_review():
     for page in all_jobs:
         status = extract_property(page, "Status")
         date_found = extract_property(page, "Date Found")
+        dismissed = extract_property(page, "Dismissed")
+
+        # Dismissed jobs always get reviewed (regardless of status)
+        if dismissed:
+            reviewable.append(page)
+            continue
 
         # Skip protected statuses
         if status in PROTECTED_STATUSES:
@@ -74,6 +80,12 @@ def _check_job(page):
         ("CLOSED", close_reason)  — job should be archived
         ("INCONCLUSIVE", None)    — couldn't determine
     """
+    # Check -1: Dismissed by Will (highest priority — archive immediately)
+    dismissed = extract_property(page, "Dismissed")
+    if dismissed:
+        dismissed_reason = extract_property(page, "Dismissed Reason")
+        return "CLOSED", dismissed_reason if dismissed_reason else "Dismissed"
+
     title = extract_property(page, "Job Title")
     company = extract_property(page, "Company")
 
