@@ -76,6 +76,23 @@ _NON_US_UPPER = [s.upper() for s in NON_US_SIGNALS]
 _US_UPPER = [s.upper() for s in US_SIGNALS]
 
 
+def has_us_signal(location: str) -> bool:
+    """Returns True only if location explicitly mentions US/Remote/state.
+
+    Unlike is_us_eligible (which passes ambiguous locations through),
+    this returns False for ambiguous locations. Used by scoring to
+    penalize unconfirmed locations.
+    """
+    if not location:
+        return False
+
+    loc_upper = location.upper()
+    for signal in _US_UPPER:
+        if signal in loc_upper:
+            return True
+    return False
+
+
 def is_us_eligible(location: str) -> bool:
     """Returns True if the job appears fillable from Georgia, US."""
     if not location:

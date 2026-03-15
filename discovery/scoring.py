@@ -6,7 +6,11 @@ Scores each RawJob 0-10 against Will's profile with transparent explanations.
 import re
 from dataclasses import dataclass, field
 from .sources.base import RawJob
+from .location_filter import has_us_signal
 from . import config
+
+# Penalty applied to work arrangement score when location is ambiguous
+UNCONFIRMED_LOCATION_PENALTY = 0.5
 
 
 @dataclass
@@ -142,21 +146,32 @@ def _score_skills(job):
 
 
 def _classify_work_arrangement(job):
-    """Classify as Remote/Hybrid/On-site and return score 0-2.0."""
+    """Classify as Remote/Hybrid/On-site and return score 0-2.0.
+
+    Applies a penalty when location has no confirmed US signal.
+    """
     text = _text_lower(job)
     max_score = 2.0
+    location = job.location or ""
+    confirmed_us = has_us_signal(location)
 
     # Check for explicit "not remote" / "no remote" before checking for "remote"
     has_anti_remote = any(kw in text for kw in config.ONSITE_KEYWORDS)
 
     if not has_anti_remote and (job.is_remote or any(kw in text for kw in config.REMOTE_KEYWORDS)):
-        return "Remote", max_score, f"Remote ({max_score}/{max_score})"
+        if confirmed_us:
+            return "Remote", max_score, f"Remote ({max_score}/{max_score})"
+        score = max(max_score - UNCONFIRMED_LOCATION_PENALTY, 0)
+        return "Remote", score, f"Remote, unconfirmed US ({score}/{max_score})"
 
     if any(kw in text for kw in config.HYBRID_KEYWORDS):
         is_atlanta = any(kw in text for kw in config.ATLANTA_KEYWORDS)
         if is_atlanta:
             return "Hybrid", 1.5, f"Hybrid ATL (1.5/{max_score})"
-        return "Hybrid", 1.0, f"Hybrid non-ATL (1.0/{max_score})"
+        if confirmed_us:
+            return "Hybrid", 1.0, f"Hybrid non-ATL (1.0/{max_score})"
+        score = max(1.0 - UNCONFIRMED_LOCATION_PENALTY, 0)
+        return "Hybrid", score, f"Hybrid, unconfirmed US ({score}/{max_score})"
 
     is_atlanta = any(kw in text for kw in config.ATLANTA_KEYWORDS)
     if is_atlanta:
