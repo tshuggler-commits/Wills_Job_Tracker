@@ -1,0 +1,30 @@
+name: Weekly Job Summary
+
+# Runs at 12 PM UTC every Monday = 7 AM EST / 8 AM EDT
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  send-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r notifications/requirements.txt
+
+      - name: Send weekly summary email
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python notifications/notify.py weekly-summary
