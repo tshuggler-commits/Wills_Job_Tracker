@@ -33,8 +33,8 @@ Scans 3 job board APIs daily, scores each job 0-10 against Will's profile, dedup
 - Industry (10%) — Risk mgmt > FinServ > General
 - Seniority (10%) — Mid-senior preferred
 
-**Dealbreakers (force score to 0, Status = "Rejected"):**
-- Fully on-site outside Atlanta metro
+**Dealbreakers (force score to 0, never written to Notion):**
+- All on-site jobs (regardless of location)
 - Travel required
 - 2+ toxic culture signals
 
@@ -92,6 +92,7 @@ Python-based email system replacing Zapier. Sends formatted HTML emails via Gmai
 | `daily-digest.yml` — Email digest | 8 AM ET daily (13:00 UTC) | Needs `GMAIL_APP_PASSWORD` |
 | `weekly-summary.yml` — Weekly rollup | 7 AM ET Mondays (12:00 UTC Mon) | Needs `GMAIL_APP_PASSWORD` |
 | `deadline-reminder.yml` — Deadline alerts | 9 AM ET daily (14:00 UTC) | Needs `GMAIL_APP_PASSWORD` |
+| `interview-prep.yml` — Interview prep generator | Every 2 hrs, 8AM-6PM ET | Needs `GMAIL_APP_PASSWORD` + optional `NOTEBOOKLM_AUTH_JSON` |
 
 ---
 
@@ -102,7 +103,7 @@ Python-based email system replacing Zapier. Sends formatted HTML emails via Gmai
 | Active Job Tracker | `ac20106e-1c1c-4000-8065-f57850f48d10` | Live |
 | Job Tracker Archive | `de8601cdd18d4258ac513c8415a3d11a` | Live |
 
-**Active Tracker properties:** Job Title, Company, Match Score, Work Type, Employment Type, Salary Range, Company Intel, Apply Link, Priority, Red Flags (multi_select), Date Found, Status, Apply By, Applied, Company Rating, Source, Company Size, Industry, Dismissed, Dismissed Reason
+**Active Tracker properties:** Job Title, Company, Match Score, Work Type, Employment Type, Salary Range, Company Intel, Apply Link, Priority, Red Flags (multi_select), Date Found, Status, Apply By, Applied, Company Rating, Source, Company Size, Industry, Dismissed, Dismissed Reason, NotebookLM Status, NotebookLM URLs
 
 **Archive-specific properties:** Date Archived, Close Reason, Dismissed Reason
 
@@ -120,6 +121,7 @@ Python-based email system replacing Zapier. Sends formatted HTML emails via Gmai
 | `CLAUDE_WILLS_JOB_TRACKER_API_KEY` | Configured (not used by pipeline) |
 | `GMAIL_ADDRESS` | **Not configured** |
 | `GMAIL_APP_PASSWORD` | **Not configured** |
+| `NOTEBOOKLM_AUTH_JSON` | **Not configured** (optional — interview prep works without it) |
 
 ---
 
@@ -136,12 +138,12 @@ Python-based email system replacing Zapier. Sends formatted HTML emails via Gmai
 
 | Item | Description | Effort |
 |------|-------------|--------|
-| Update README.md | Current README references Google Apps Script/Zapier and shows incorrect repo structure — needs rewrite to match actual system | Small |
-| Remove `github-workflows/` duplicate directory | Workflows are correctly in `.github/workflows/` now; the `github-workflows/` copies are redundant | Small |
+| ~~Update README.md~~ | ~~Rewritten to match actual system~~ | Done |
+| ~~Remove `github-workflows/` duplicate directory~~ | ~~Deleted; workflows are in `.github/workflows/`~~ | Done |
 | Bump GitHub Actions versions | `actions/checkout@v4` → `v5`, `actions/setup-python@v5` → `v6` (Node.js 20 deprecation warning) | Small |
 | Insurance industry scoring | Currently penalized at 0.2/1.0 — may want to adjust since Will has insurance background (Hiscox, AIG) | Small |
 | Cowork resume tailoring workflow | On-demand resume/cover letter generation when Will chooses to apply | Medium |
-| NotebookLM interview prep automation | Automated uploads and prep material generation | Medium |
+| ~~NotebookLM interview prep automation~~ | ~~Built: `interview_prep/` module with NotebookLM integration, audio overview, infographic, fallback email~~ | Done |
 | Company intelligence enrichment | Pull company size, culture, mission, AI initiatives beyond what job board APIs provide | Medium |
 | Monday kickoff coaching email | Weekly email with stats, action items, and goals (beyond the current weekly summary) | Medium |
 
@@ -149,9 +151,9 @@ Python-based email system replacing Zapier. Sends formatted HTML emails via Gmai
 
 | Item | Description |
 |------|-------------|
-| Duplicate `sys.path.insert` in `review/review.py` | Line 20 and line 29 both insert parent dir — harmless but redundant |
-| Unused weighted_score calculation in `scoring.py` | Lines 276-282 compute `weighted_score` but it's never used (line 285 recomputes as `total`) |
-| `create_archive_db.py` not needed | Archive was created via Notion MCP; script exists but was never used |
+| ~~Duplicate `sys.path.insert` in `review/review.py`~~ | ~~Removed redundant line~~ |
+| ~~Unused weighted_score in `scoring.py`~~ | ~~Removed dead code~~ |
+| ~~`create_archive_db.py` not needed~~ | ~~Deleted~~ |
 
 ---
 

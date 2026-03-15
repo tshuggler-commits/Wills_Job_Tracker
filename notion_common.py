@@ -111,6 +111,8 @@ def extract_job(page):
         "apply_by": extract_property(page, "Apply By"),
         "applied": extract_property(page, "Applied"),
         "company_rating": extract_property(page, "Company Rating"),
+        "notebooklm_status": extract_property(page, "NotebookLM Status"),
+        "notebooklm_urls": extract_property(page, "NotebookLM URLs"),
         "page_id": page.get("id", ""),
         "page_url": page.get("url", ""),
     }

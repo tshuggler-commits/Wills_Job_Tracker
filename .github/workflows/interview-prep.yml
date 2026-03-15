@@ -1,13 +1,14 @@
-name: Weekly Job Summary
+name: Interview Prep Generator
 
-# Runs at 12 PM UTC every Monday = 7 AM EST / 8 AM EDT
 on:
   schedule:
-    - cron: "0 12 * * 1"
-  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+    # Every 2 hours during ET business hours (8 AM - 6 PM ET)
+    # UTC equivalents: 13, 15, 17, 19, 21, 23
+    - cron: "0 13,15,17,19,21,23 * * *"
+  workflow_dispatch:
 
 jobs:
-  send-summary:
+  generate-prep:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -19,12 +20,13 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r notifications/requirements.txt
+        run: pip install -r interview_prep/requirements.txt
 
-      - name: Send weekly summary email
+      - name: Generate interview prep
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python notifications/notify.py weekly-summary
+          NOTEBOOKLM_AUTH_JSON: ${{ secrets.NOTEBOOKLM_AUTH_JSON }}
+        run: python -m interview_prep.prep run

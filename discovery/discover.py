@@ -98,13 +98,8 @@ def run():
     for sj in scored_jobs:
         if sj.is_dealbreaker:
             dealbreakers += 1
-            # Still write dealbreakers to Notion with Status=Rejected
-            # so Will can see what was filtered and why
-            result = write_job(sj)
-            if result:
-                written += 1
-            else:
-                errors += 1
+            print(f"  ✗ Dealbreaker: {sj.raw.title} @ {sj.raw.company} — {sj.explanation}")
+            # Don't write to Notion — zero-score jobs never reach the tracker
         elif sj.score < config.MIN_SCORE_THRESHOLD:
             filtered += 1
             print(f"  - Filtered (score {sj.score}): {sj.raw.title} @ {sj.raw.company}")

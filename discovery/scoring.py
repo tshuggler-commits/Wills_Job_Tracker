@@ -285,18 +285,23 @@ def score_job(raw_job):
     industry_score, industry_expl = _score_industry(raw_job)
     seniority_score, seniority_expl = _score_seniority(raw_job)
 
-    # Apply weights (scores are already on their max scale, weights distribute to 10.0)
-    weights = config.WEIGHTS
-    weighted_score = (
-        role_score * (weights["role_type"] / 0.30) * weights["role_type"] * 10 / 3.0 +
-        skills_score * (weights["skills"] / 0.20) * weights["skills"] * 10 / 2.0 +
-        work_score * (weights["work_arrangement"] / 0.20) * weights["work_arrangement"] * 10 / 2.0 +
-        size_score * (weights["company_size"] / 0.10) * weights["company_size"] * 10 / 1.0 +
-        industry_score * (weights["industry"] / 0.10) * weights["industry"] * 10 / 1.0 +
-        seniority_score * (weights["seniority"] / 0.10) * weights["seniority"] * 10 / 1.0
-    )
+    # On-site = hard dealbreaker (never write to Notion)
+    if work_type == "On-site":
+        emp_type = _classify_employment_type(raw_job)
+        return ScoredJob(
+            raw=raw_job,
+            score=0.0,
+            score_breakdown={"dealbreaker": ["On-site work arrangement"]},
+            explanation="0.0/10: DEALBREAKER — On-site work arrangement",
+            red_flags=["On-site dealbreaker"] + red_flags,
+            is_dealbreaker=True,
+            work_type=work_type,
+            employment_type=emp_type,
+            priority="Low",
+        )
 
-    # Simplify: each dimension's contribution = (score / max_score) * weight * 10
+    # Each dimension's contribution = (score / max_score) * weight * 10
+    weights = config.WEIGHTS
     total = round(
         (role_score / 3.0) * weights["role_type"] * 10 +
         (skills_score / 2.0) * weights["skills"] * 10 +

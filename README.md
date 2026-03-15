@@ -1,120 +1,112 @@
 # Will's Job Tracker
 
-Automated job discovery, scoring, and notification system for Will's career search. Claude Code finds and scores jobs, Notion stores everything, and a notification layer (Google Apps Script + Zapier) keeps Will informed daily.
+Automated job discovery, scoring, review, and notification system. Scans 3 job board APIs daily, scores each role 0–10 against Will's profile, writes matches to Notion, archives stale listings, and sends email digests.
 
 ---
 
-## How the System Works
+## How It Works
 
-Claude Code scans job boards overnight, scores each role against Will's profile, and pushes results into a Notion database. Every morning, Will gets an email digest ranking the best matches. On Mondays, a separate coaching email recaps the prior week and sets the week's priorities. When Will decides to apply, Cowork tailors his resume. When he lands an interview, NotebookLM preps him.
-
----
-
-## System Architecture
-
-| Layer | Tool | Purpose | Status |
-|-------|------|---------|--------|
-| Job Discovery + Scoring | Claude Code | Scan job boards, score against profile, populate Notion | Not built |
-| Company Intelligence | Claude Code | Pull company size, culture, mission, AI initiatives, red flags | Not built |
-| Central Database | Notion | Store all job data across 24 properties | Live |
-| Daily Email Digest | Google Apps Script | Morning email with ranked unread jobs and priority matches | Live |
-| Monday Kickoff Email | Google Apps Script | Weekly coaching email with stats, action items, and a goal | Not built |
-| Deadline Reminders | Zapier | Email 3 days before Apply By date | Live |
-| Interview Prep Alert | Zapier | Email when status changes to Interviewing | Live |
-| Resume + Cover Letter | Cowork | On-demand tailoring from base resume | Not built |
-| Interview Prep | NotebookLM | Audio overviews, flashcards, behavioral practice | Manual |
+1. **6 AM ET** — GitHub Actions runs the discovery pipeline: fetches jobs from Adzuna, Remotive, and The Muse (with a JobSpy fallback if <5 new results), filters by location, deduplicates against active + archive databases, scores each job, and writes passing matches to Notion.
+2. **Same run** — The review pipeline checks existing unacted-on jobs for dead links, past deadlines, age-based expiry, and non-US locations. Closed jobs are archived (copy → verify → delete).
+3. **8 AM ET** — Daily email digest with new matches grouped by priority.
+4. **9 AM ET** — Deadline reminder emails for jobs due within 3 days.
+5. **Every 2 hrs (8AM–6PM ET)** — Interview prep: detects jobs moved to "Interview" status, generates tailored prep materials, creates NotebookLM notebook (audio overview + infographic), and emails Will.
+6. **Mon 7 AM ET** — Monday kickoff coaching email with weekly stats and a rotating goal.
+7. **Mon 7 AM ET** — Weekly summary email with new match and application counts.
 
 ---
 
-## Search Parameters
+## Scoring (0–10)
 
-| Parameter | Value |
-|-----------|-------|
-| Role type | Operations, automation, data migration, business analysis, project management |
-| Company size | Small to medium preferred |
-| Work arrangement | Remote preferred, hybrid acceptable (Atlanta metro) |
-| Relocation | No |
-| Employment type | Full-time, part-time, and contract |
-| Industry preference | Risk management space |
-| Dealbreakers | Fully on-site, travel required, toxic leadership signals |
+| Dimension | Weight | Best Score |
+|-----------|--------|------------|
+| Role type match (title vs description keywords) | 30% | 3.0 |
+| Skills overlap with Will's profile | 20% | 2.0 |
+| Work arrangement (Remote > Hybrid ATL > On-site) | 20% | 2.0 |
+| Company size (small/medium preferred) | 10% | 1.0 |
+| Industry (risk mgmt > finserv > general) | 10% | 1.0 |
+| Seniority fit (mid-senior preferred) | 10% | 1.0 |
 
----
+**Dealbreakers (force score to 0, never written to Notion):** All on-site jobs, travel required, 2+ toxic culture signals.
 
-## Scoring Profile
-
-The Claude Code pipeline scores each job against Will's background:
-
-- 10+ years operations experience (Hiscox USA, AIG)
-- U.S. Marine Corps veteran
-- BBA in Risk Management and Insurance (Georgia State University)
-- AINS designation
-- AI certifications completed during career gap (2023 to present)
-- 6 LinkedIn/Microsoft certifications
-
----
-
-## Key IDs and Files
-
-| Item | Value |
-|------|-------|
-| Notion database ID | `ac20106e-1c1c-4000-8065-f57850f48d10` |
-| Notion data source ID | `5bd04902-6b54-4810-a15e-d9d995337adf` |
-| Base resume | `WR-BASE-CURRENT.docx` |
-| Resume naming convention | `WR-[Company]-[Role]-[Date]` |
-| Daily digest script | Google Apps Script: `sendDailyDigest` |
-| Monday kickoff script | Google Apps Script: `sendMondayKickoff` |
-
----
-
-## Build Order
-
-| Step | Task | Tool | Depends On |
-|------|------|------|------------|
-| 1 | Delete 3 OFF Zaps in Zapier | Zapier dashboard | Nothing |
-| 2 | Build Monday Kickoff Email | Google Apps Script | Notion database |
-| 3 | Build Claude Code job discovery pipeline | Claude Code | Notion database |
-| 4 | Test full pipeline end to end | All tools | Steps 1 through 3 |
-| 5 | Set up Cowork resume tailoring workflow | Cowork | Base resume |
-| 6 | Document NotebookLM prep workflow | Markdown doc | Zap 2 |
-| 7 | Automate NotebookLM uploads | notebooklm-mcp or notebooklm-py | Steps 4 through 6 |
-
----
-
-## Secrets Required
-
-This repo will need the following secrets configured in **Settings > Secrets and variables > Actions**:
-
-| Secret | Purpose |
-|--------|---------|
-| `NOTION_API_KEY` | Authenticate with the Notion API to read/write job data |
-| `ANTHROPIC_API_KEY` | Power the Claude Code scoring pipeline |
-
-Additional secrets may be needed depending on which job board APIs the discovery pipeline integrates with.
+**Priority:** ≥7 High, ≥5 Medium, <5 Low.
 
 ---
 
 ## Repo Structure
 
 ```
-wills-job-tracker/
-├── README.md
-├── .github/
-│   └── workflows/        # GitHub Actions workflow files
-├── scripts/
-│   ├── discover.py       # Job board scanning and scoring
-│   └── populate.py       # Push scored jobs to Notion
-├── config/
-│   └── search-params.json # Search parameters and scoring weights
-└── docs/
-    └── automation-plan.md # Full system documentation
+Wills Job Search/
+├── .github/workflows/
+│   ├── job-pipeline.yml          # Daily: discovery → review → archive
+│   ├── daily-digest.yml          # Daily: email new job matches
+│   ├── weekly-summary.yml        # Monday: weekly rollup email
+│   ├── deadline-reminder.yml     # Daily: deadline alert emails
+│   └── interview-prep.yml       # Every 2hrs: interview prep automation
+├── discovery/
+│   ├── discover.py               # CLI: run | test-scoring
+│   ├── config.py                 # Search params, weights, keywords
+│   ├── scoring.py                # 0-10 scoring engine
+│   ├── dedup.py                  # Title+company dedup (active + archive)
+│   ├── location_filter.py        # Non-US / non-Latin rejection
+│   ├── notion_writer.py          # Write scored jobs to Notion
+│   ├── requirements.txt
+│   └── sources/
+│       ├── base.py               # RawJob dataclass, JobSource ABC
+│       ├── adzuna.py              # Adzuna API
+│       ├── remotive.py            # Remotive API
+│       ├── themuse.py             # The Muse API
+│       └── jobspy_source.py       # Indeed + Google Jobs fallback
+├── review/
+│   ├── review.py                 # CLI: run
+│   ├── link_checker.py           # HTTP link verification
+│   ├── archiver.py               # Copy-verify-delete to archive DB
+│   └── requirements.txt
+├── interview_prep/
+│   ├── prep.py                   # CLI: run (detect Interview → generate prep → email)
+│   ├── material_builder.py       # Scrape job desc, build company brief, generate questions
+│   ├── notebooklm_client.py      # NotebookLM automation (audio, infographic, notebook)
+│   └── requirements.txt
+├── notifications/
+│   ├── notify.py                 # CLI: daily-digest | weekly-summary | deadline-reminder
+│   ├── requirements.txt
+│   └── SETUP.md
+├── notion_common.py              # Shared Notion API helpers
+├── generate_resumes.py           # Resume generation (pre-pipeline)
+└── STATUS.md                     # Detailed project status
 ```
-
-> This structure will evolve as the pipeline gets built. The layout above is a starting point.
 
 ---
 
-## Resources
+## Notion Databases
 
-- [Full Automation Plan](docs/automation-plan.md) for detailed specs on every component
-- [Notion API docs](https://developers.notion.com/) for database integration reference
-- [Anthropic API docs](https://docs.anthropic.com/) for Claude Code pipeline reference
+| Database | Purpose |
+|----------|---------|
+| Active Job Tracker | All current jobs with 20+ properties (score, status, red flags, etc.) |
+| Job Tracker Archive | Closed/expired/dismissed jobs with Date Archived and Close Reason |
+
+---
+
+## GitHub Secrets Required
+
+| Secret | Purpose |
+|--------|---------|
+| `NOTION_API_KEY` | Notion integration token |
+| `NOTION_DATABASE_ID` | Active tracker database ID |
+| `NOTION_ARCHIVE_DB_ID` | Archive database ID |
+| `ADZUNA_API_ID` | Adzuna API app ID |
+| `ADZUNA_API_KEY` | Adzuna API key |
+| `GMAIL_ADDRESS` | Sender email for notifications |
+| `GMAIL_APP_PASSWORD` | Gmail app password for SMTP |
+| `NOTEBOOKLM_AUTH_JSON` | NotebookLM cookies for interview prep automation (optional) |
+
+---
+
+## Will's Profile
+
+- 10+ years operations experience (Hiscox USA, AIG)
+- U.S. Marine Corps veteran
+- BBA in Risk Management and Insurance (Georgia State University)
+- AINS designation
+- AI certifications (2023–present)
+- Target: Remote/hybrid operations, automation, data migration, business analysis, project management roles

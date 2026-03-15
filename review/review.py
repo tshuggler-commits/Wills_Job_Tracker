@@ -26,7 +26,6 @@ from .link_checker import check_link
 from .archiver import archive_job
 
 # Import location filter for catching non-US jobs already in tracker
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from discovery.location_filter import contains_non_latin, is_us_eligible
 
 
