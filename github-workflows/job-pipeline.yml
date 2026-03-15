@@ -27,15 +27,15 @@ jobs:
 
       - name: Run job discovery pipeline
         env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
-          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_API_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_API_KEY }}
         run: python -m discovery.discover run
 
       - name: Run job status review + archive
         env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           NOTION_ARCHIVE_DB_ID: ${{ secrets.NOTION_ARCHIVE_DB_ID }}
         run: python -m review.review run
