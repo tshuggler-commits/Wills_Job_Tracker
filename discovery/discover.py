@@ -26,6 +26,7 @@ from .sources.base import RawJob
 from .scoring import score_job
 from .dedup import load_existing_keys, generate_dedup_key
 from .notion_writer import write_job
+from .location_filter import filter_jobs
 from . import config
 
 
@@ -49,6 +50,11 @@ def run():
             all_raw_jobs.extend(jobs)
 
     print(f"\nTotal raw jobs from APIs: {len(all_raw_jobs)}")
+
+    # Step 2b: Location filter (remove non-US / non-Latin jobs)
+    all_raw_jobs, location_filtered = filter_jobs(all_raw_jobs)
+    if location_filtered:
+        print(f"  Location filter removed {location_filtered} jobs")
 
     # Step 3: Dedup against Notion + intra-run
     new_jobs = []
@@ -113,7 +119,8 @@ def run():
     print("\n" + "=" * 60)
     print("DISCOVERY SUMMARY")
     print("=" * 60)
-    print(f"  Raw jobs fetched:    {len(all_raw_jobs)}")
+    print(f"  Raw jobs fetched:    {len(all_raw_jobs) + location_filtered}")
+    print(f"  Location filtered:   {location_filtered}")
     print(f"  Duplicates skipped:  {dupes_skipped}")
     print(f"  New jobs scored:     {len(new_jobs)}")
     print(f"  Written to Notion:   {written}")

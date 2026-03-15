@@ -25,6 +25,10 @@ from notion_common import (
 from .link_checker import check_link
 from .archiver import archive_job
 
+# Import location filter for catching non-US jobs already in tracker
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from discovery.location_filter import contains_non_latin, is_us_eligible
+
 
 # Statuses that mean Will is actively pursuing the job — don't touch these
 PROTECTED_STATUSES = {"Applied", "Interview", "Offer", "Rejected", "Withdrawn"}
@@ -70,6 +74,14 @@ def _check_job(page):
         ("CLOSED", close_reason)  — job should be archived
         ("INCONCLUSIVE", None)    — couldn't determine
     """
+    title = extract_property(page, "Job Title")
+    company = extract_property(page, "Company")
+
+    # Check 0: Location filter (catch non-US jobs already in tracker)
+    for field in [title, company]:
+        if contains_non_latin(field):
+            return "CLOSED", "Non-US location"
+
     apply_link = extract_property(page, "Apply Link")
     apply_by = extract_property(page, "Apply By")
     date_found = extract_property(page, "Date Found")
