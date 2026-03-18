@@ -1,0 +1,116 @@
+{
+  "name": "Will Sharp",
+  "target_title": "Operations / Business Analysis / Project Management",
+  "years_experience": 10,
+  "military": "U.S. Marine Corps veteran",
+
+  "skills": [
+    "operations management",
+    "business process automation",
+    "data migration",
+    "workflow optimization",
+    "cross-functional leadership",
+    "stakeholder communication",
+    "insurance operations",
+    "claims processing",
+    "regulatory compliance",
+    "project management",
+    "change management",
+    "risk assessment",
+    "process documentation",
+    "requirements gathering",
+    "vendor management",
+    "team leadership",
+    "AI tool evaluation",
+    "prompt engineering",
+    "data analysis"
+  ],
+
+  "experience_domains": [
+    "insurance",
+    "risk management",
+    "financial services",
+    "operations"
+  ],
+
+  "recent_roles": [
+    {
+      "company": "Hiscox USA",
+      "title": "Operations",
+      "focus": "operations, automation, data migration, process improvement"
+    },
+    {
+      "company": "AIG",
+      "title": "Operations",
+      "focus": "operations, project management, claims processing"
+    }
+  ],
+
+  "education": [
+    {
+      "degree": "BBA",
+      "field": "Risk Management and Insurance",
+      "school": "Georgia State University"
+    }
+  ],
+
+  "certifications": [
+    {
+      "name": "AINS",
+      "type": "professional_designation",
+      "field": "insurance"
+    },
+    {
+      "name": "AI/ML Certifications",
+      "type": "certificate",
+      "field": "artificial_intelligence",
+      "period": "2023-present"
+    }
+  ],
+
+  "preferences": {
+    "work_arrangement": {
+      "ideal": "remote",
+      "acceptable": "hybrid_atlanta_metro",
+      "dealbreaker": "on_site"
+    },
+    "salary": {
+      "target_min_annual": 85000,
+      "acceptable_min_annual": 70000,
+      "target_min_hourly": 55,
+      "acceptable_min_hourly": 45
+    },
+    "company_size": {
+      "ideal_min": 51,
+      "ideal_max": 1000,
+      "acceptable_max": 5000
+    },
+    "industries_preferred": [
+      "risk management",
+      "financial services",
+      "consulting",
+      "technology"
+    ],
+    "industries_acceptable": [
+      "insurance",
+      "healthcare",
+      "government"
+    ],
+    "employment_type": {
+      "ideal": "full_time",
+      "acceptable": ["contract_6mo_plus", "part_time"]
+    },
+    "dealbreakers": [
+      "fully_on_site",
+      "travel_required",
+      "relocation_required"
+    ]
+  },
+
+  "location": {
+    "city": "Tucker",
+    "metro": "Atlanta",
+    "state": "Georgia",
+    "hybrid_radius_miles": 30
+  }
+}
