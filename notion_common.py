@@ -98,7 +98,18 @@ def extract_job(page):
     return {
         "title": extract_property(page, "Job Title"),
         "company": extract_property(page, "Company"),
+        # Dual scoring fields
+        "fit_score": extract_property(page, "Fit Score"),
         "match_score": extract_property(page, "Match Score"),
+        "total_score": extract_property(page, "Total Score"),
+        # Role detail fields
+        "role_summary": extract_property(page, "Role Summary"),
+        "key_requirements": extract_property(page, "Key Requirements"),
+        "why_match": extract_property(page, "Why Match"),
+        "skill_gaps": extract_property(page, "Skill Gaps"),
+        "fit_breakdown": extract_property(page, "Fit Breakdown"),
+        "match_breakdown": extract_property(page, "Match Breakdown"),
+        # Existing fields
         "work_type": extract_property(page, "Work Type"),
         "employment_type": extract_property(page, "Employment Type"),
         "salary_range": extract_property(page, "Salary Range"),

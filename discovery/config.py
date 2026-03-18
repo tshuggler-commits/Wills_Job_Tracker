@@ -35,7 +35,7 @@ WEIGHTS = {
 }
 
 # Minimum score to write to Notion
-MIN_SCORE_THRESHOLD = 3.0
+MIN_SCORE_THRESHOLD = 5.0
 
 # Maximum age of listings to fetch (hours)
 MAX_LISTING_AGE_HOURS = 48

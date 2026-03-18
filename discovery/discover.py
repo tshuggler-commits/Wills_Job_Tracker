@@ -98,11 +98,13 @@ def run():
     for sj in scored_jobs:
         if sj.is_dealbreaker:
             dealbreakers += 1
-            print(f"  ✗ Dealbreaker: {sj.raw.title} @ {sj.raw.company} — {sj.explanation}")
+            reason = sj.red_flags[0] if sj.red_flags else "Unknown"
+            print(f"  ✗ Dealbreaker: {sj.raw.title} @ {sj.raw.company} — {reason}")
             # Don't write to Notion — zero-score jobs never reach the tracker
-        elif sj.score < config.MIN_SCORE_THRESHOLD:
+        elif sj.total_score < config.MIN_SCORE_THRESHOLD:
             filtered += 1
-            print(f"  - Filtered (score {sj.score}): {sj.raw.title} @ {sj.raw.company}")
+            print(f"  - Filtered (total {sj.total_score}, fit {sj.fit_score}, match {sj.match_score}): "
+                  f"{sj.raw.title} @ {sj.raw.company}")
         else:
             result = write_job(sj)
             if result:
@@ -184,14 +186,22 @@ def test_scoring():
         print(f"Title:      {job.title}")
         print(f"Company:    {job.company}")
         print(f"Location:   {job.location}")
-        print(f"Score:      {scored.score}/10 [{scored.priority}]")
+        print(f"Fit Score:  {scored.fit_score}/10")
+        print(f"Match Score:{scored.match_score}/10")
+        print(f"Total Score:{scored.total_score}/10 [{scored.priority}]")
         print(f"Work Type:  {scored.work_type}")
         print(f"Emp Type:   {scored.employment_type}")
         if scored.is_dealbreaker:
             print(f"DEALBREAKER: {', '.join(scored.red_flags)}")
-        elif scored.red_flags:
-            print(f"Red Flags:  {', '.join(scored.red_flags)}")
-        print(f"Breakdown:  {scored.explanation}")
+        else:
+            if scored.role_summary:
+                print(f"Summary:    {scored.role_summary[:100]}...")
+            if scored.why_match:
+                print(f"Why Match:  {scored.why_match[:100]}...")
+            if scored.skill_gaps:
+                print(f"Skill Gaps: {', '.join(scored.skill_gaps)}")
+            if scored.red_flags:
+                print(f"Red Flags:  {', '.join(scored.red_flags)}")
         print()
 
 

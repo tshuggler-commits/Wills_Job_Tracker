@@ -1,7 +1,13 @@
 """
 Writes scored jobs to the Notion Job Tracker database.
+
+Writes all dual-scoring fields:
+- Fit Score, Match Score, Total Score (numbers)
+- Role Summary, Key Requirements, Why Match, Skill Gaps (rich text)
+- Fit Breakdown, Match Breakdown (rich text, stored as JSON strings)
 """
 
+import json
 import sys
 import os
 import time
@@ -34,9 +40,7 @@ def _build_intel_string(scored_job):
     if scored_job.raw.company_description:
         parts.append(f"About: {scored_job.raw.company_description}")
 
-    parts.append(f"\nScore breakdown: {scored_job.explanation}")
-
-    return " | ".join(parts) if len(parts) > 1 else parts[0] if parts else ""
+    return " | ".join(parts) if parts else ""
 
 
 def _map_company_size(scored_job):
@@ -60,8 +64,6 @@ def _map_company_size(scored_job):
 
 def _map_red_flags(red_flags):
     """Map pipeline red flag strings to Notion multi_select option names."""
-    # Notion Red Flags options: Toxic Leadership, High Turnover, Hostile Culture,
-    # Low Pay, Scam Risk, Poor Reviews, No Growth
     flag_mapping = {
         "toxic": "Toxic Leadership",
         "travel required": "Hostile Culture",
@@ -78,7 +80,6 @@ def _map_red_flags(red_flags):
                 mapped.add(notion_option)
                 break
         else:
-            # Default: if the flag contains "toxic", map to Toxic Leadership
             if "toxic" in flag_lower:
                 mapped.add("Toxic Leadership")
     return list(mapped)
@@ -89,8 +90,6 @@ def _map_industry(industry_str):
     if not industry_str:
         return None
     industry_lower = industry_str.lower()
-    # Notion Industry options: Risk Management, Financial Services, Insurance,
-    # Technology, Consulting, Healthcare, Government
     mapping = [
         (["risk management", "risk", "grc", "governance"], "Risk Management"),
         (["financial", "fintech", "banking", "capital", "lending", "credit"], "Financial Services"),
@@ -103,7 +102,23 @@ def _map_industry(industry_str):
     for keywords, option_name in mapping:
         if any(kw in industry_lower for kw in keywords):
             return option_name
-    return None  # Don't set if we can't map to a valid option
+    return None
+
+
+def _rich_text(content, max_len=2000):
+    """Build a Notion rich_text property value."""
+    if not content:
+        return None
+    text = str(content)[:max_len]
+    return {"rich_text": [{"text": {"content": text}}]}
+
+
+def _json_rich_text(obj, max_len=2000):
+    """Serialize a dict/list to JSON and wrap as rich_text."""
+    if not obj:
+        return None
+    text = json.dumps(obj, indent=2)[:max_len]
+    return {"rich_text": [{"text": {"content": text}}]}
 
 
 def write_job(scored_job):
@@ -116,7 +131,11 @@ def write_job(scored_job):
     properties = {
         "Job Title": {"title": [{"text": {"content": scored_job.raw.title[:2000]}}]},
         "Company": {"rich_text": [{"text": {"content": scored_job.raw.company[:2000]}}]},
-        "Match Score": {"number": scored_job.score},
+        # Dual scoring fields
+        "Fit Score": {"number": scored_job.fit_score},
+        "Match Score": {"number": scored_job.match_score},
+        "Total Score": {"number": scored_job.total_score},
+        # Metadata
         "Work Type": {"select": {"name": scored_job.work_type}},
         "Employment Type": {"select": {"name": scored_job.employment_type}},
         "Date Found": {"date": {"start": today}},
@@ -125,13 +144,32 @@ def write_job(scored_job):
         "Status": {"select": {"name": "Rejected" if scored_job.is_dealbreaker else "New"}},
     }
 
-    # Optional fields — only add if we have data
+    # Role detail fields (rich text)
+    if scored_job.role_summary:
+        properties["Role Summary"] = _rich_text(scored_job.role_summary)
+    if scored_job.key_requirements:
+        # Store as bullet list string
+        req_text = "\n".join(f"- {r}" for r in scored_job.key_requirements)
+        properties["Key Requirements"] = _rich_text(req_text)
+    if scored_job.why_match:
+        properties["Why Match"] = _rich_text(scored_job.why_match)
+    if scored_job.skill_gaps:
+        gaps_text = ", ".join(scored_job.skill_gaps)
+        properties["Skill Gaps"] = _rich_text(gaps_text)
+
+    # Breakdown fields (stored as JSON strings)
+    if scored_job.fit_breakdown:
+        properties["Fit Breakdown"] = _json_rich_text(scored_job.fit_breakdown)
+    if scored_job.match_breakdown:
+        properties["Match Breakdown"] = _json_rich_text(scored_job.match_breakdown)
+
+    # Optional fields
     if salary:
-        properties["Salary Range"] = {"rich_text": [{"text": {"content": salary[:2000]}}]}
+        properties["Salary Range"] = _rich_text(salary)
     if scored_job.raw.apply_link:
         properties["Apply Link"] = {"url": scored_job.raw.apply_link}
     if intel:
-        properties["Company Intel"] = {"rich_text": [{"text": {"content": intel[:2000]}}]}
+        properties["Company Intel"] = _rich_text(intel)
     if scored_job.red_flags:
         mapped_flags = _map_red_flags(scored_job.red_flags)
         if mapped_flags:
@@ -144,9 +182,11 @@ def write_job(scored_job):
 
     try:
         result = create_page(NOTION_DATABASE_ID, properties)
-        print(f"  ✓ Written: {scored_job.raw.title} @ {scored_job.raw.company} (score: {scored_job.score})")
+        print(f"  \u2713 Written: {scored_job.raw.title} @ {scored_job.raw.company} "
+              f"(Fit: {scored_job.fit_score}, Match: {scored_job.match_score}, "
+              f"Total: {scored_job.total_score})")
         time.sleep(0.4)  # Respect Notion rate limit (3 req/sec)
         return result
     except Exception as e:
-        print(f"  ✗ Failed to write: {scored_job.raw.title} @ {scored_job.raw.company}: {e}")
+        print(f"  \u2717 Failed to write: {scored_job.raw.title} @ {scored_job.raw.company}: {e}")
         return None

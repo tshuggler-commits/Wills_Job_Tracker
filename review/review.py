@@ -175,7 +175,10 @@ def run():
 
         elif status == "CLOSED":
             print(f"  → Closed: {close_reason}")
-            success, error = archive_job(page, close_reason)
+            # Dismissed jobs get Status="Dismissed", everything else gets "Expired"
+            dismissed = extract_property(page, "Dismissed")
+            archive_status = "Dismissed" if dismissed else "Expired"
+            success, error = archive_job(page, close_reason, status_override=archive_status)
             if success:
                 archived.append((label, close_reason))
             else:

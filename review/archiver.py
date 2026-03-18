@@ -15,7 +15,7 @@ from notion_common import (
 )
 
 
-def _build_archive_properties(page, close_reason):
+def _build_archive_properties(page, close_reason, status_override=None):
     """Build properties dict for the archive database entry from an active tracker page."""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -80,7 +80,7 @@ def _build_archive_properties(page, close_reason):
 
     select_fields = [
         "Work Type", "Employment Type", "Source", "Company Size",
-        "Industry", "Priority", "Status",
+        "Industry", "Priority",
     ]
     for field_name in select_fields:
         val = extract_property(page, field_name)
@@ -89,11 +89,28 @@ def _build_archive_properties(page, close_reason):
             if prop:
                 properties[field_name] = prop
 
-    number_fields = ["Match Score", "Company Rating"]
+    # Status: use override (Expired/Dismissed) if provided, else copy original
+    status_val = status_override or extract_property(page, "Status")
+    if status_val:
+        properties["Status"] = _select_prop(status_val)
+
+    number_fields = ["Fit Score", "Match Score", "Total Score", "Company Rating"]
     for field_name in number_fields:
         val = extract_property(page, field_name)
         if val != "":
             prop = _number_prop(val)
+            if prop:
+                properties[field_name] = prop
+
+    # v6 scoring text fields
+    scoring_text_fields = [
+        "Role Summary", "Key Requirements", "Why Match",
+        "Skill Gaps", "Fit Breakdown", "Match Breakdown",
+    ]
+    for field_name in scoring_text_fields:
+        val = extract_property(page, field_name)
+        if val:
+            prop = _text_prop(val)
             if prop:
                 properties[field_name] = prop
 
@@ -124,7 +141,7 @@ def _build_archive_properties(page, close_reason):
     return properties
 
 
-def archive_job(page, close_reason):
+def archive_job(page, close_reason, status_override=None):
     """
     Copy a job to the archive database, then delete from active tracker.
 
@@ -142,7 +159,7 @@ def archive_job(page, close_reason):
 
     # Step 1: Copy to archive
     try:
-        properties = _build_archive_properties(page, close_reason)
+        properties = _build_archive_properties(page, close_reason, status_override)
         result = create_page(NOTION_ARCHIVE_DB_ID, properties)
         archive_id = result.get("id", "")
         if not archive_id:
