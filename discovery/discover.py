@@ -27,6 +27,7 @@ from .scoring import score_job
 from .dedup import load_existing_keys, generate_dedup_key
 from .notion_writer import write_job
 from .location_filter import filter_jobs
+from .url_resolver import resolve_apply_links
 from . import config
 
 
@@ -85,11 +86,16 @@ def run():
 
         print(f"After JobSpy fallback: {len(new_jobs)} new total")
 
-    # Step 5: Score all new jobs
+    # Step 5: Resolve apply links (follow aggregator redirects to employer URLs)
+    print(f"\nResolving apply links...")
+    url_resolved, url_flagged = resolve_apply_links(new_jobs)
+    print(f"  Resolved {url_resolved} aggregator URLs, flagged {url_flagged} unresolvable")
+
+    # Step 6: Score all new jobs
     print(f"\nScoring {len(new_jobs)} jobs...")
     scored_jobs = [score_job(job) for job in new_jobs]
 
-    # Step 6: Filter and write
+    # Step 7: Filter and write
     written = 0
     filtered = 0
     dealbreakers = 0
@@ -120,6 +126,8 @@ def run():
     print(f"  Location filtered:   {location_filtered}")
     print(f"  Duplicates skipped:  {dupes_skipped}")
     print(f"  New jobs scored:     {len(new_jobs)}")
+    print(f"  URLs resolved:       {url_resolved}")
+    print(f"  URLs flagged:        {url_flagged}")
     print(f"  Written to Notion:   {written}")
     print(f"  Below threshold:     {filtered}")
     print(f"  Dealbreakers:        {dealbreakers}")
@@ -128,6 +136,42 @@ def run():
     print("=" * 60)
 
     return written
+
+
+def test_urls():
+    """Test URL resolution against sample aggregator URLs (no Notion writes)."""
+    from .url_resolver import resolve_url, is_aggregator_url
+
+    test_cases = [
+        ("Adzuna", "https://www.adzuna.com/details/5666023620?utm_medium=api&utm_source=a294a838"),
+        ("The Muse", "https://www.themuse.com/jobs/ensono/business-development-representative"),
+        ("BuiltIn (search)", "https://builtin.com/jobs/remote/atlanta/operations"),
+        ("Remotive", "https://remotive.com/remote-jobs/product/senior-product-manager-2215641"),
+        ("Direct (control)", "https://jobs.ashbyhq.com/rula/1fa45e2c-1234-5678-abcd-example"),
+    ]
+
+    print("=" * 70)
+    print("URL RESOLUTION TEST")
+    print("=" * 70)
+
+    for label, url in test_cases:
+        is_agg = is_aggregator_url(url)
+        resolved = resolve_url(url) if is_agg else url
+        changed = resolved != url
+
+        print(f"\n[{label}]")
+        print(f"  Original:    {url}")
+        print(f"  Aggregator:  {is_agg}")
+        if changed:
+            print(f"  Resolved:    {resolved}")
+            print(f"  Still agg:   {is_aggregator_url(resolved)}")
+        else:
+            print(f"  Resolved:    (unchanged)")
+        print(f"  Final agg:   {is_aggregator_url(resolved)}")
+
+    print("\n" + "=" * 70)
+    print("Test complete. No Notion writes were made.")
+    print("=" * 70)
 
 
 def test_scoring():
@@ -209,6 +253,7 @@ def main():
     commands = {
         "run": run,
         "test-scoring": test_scoring,
+        "test-urls": test_urls,
     }
 
     if len(sys.argv) < 2 or sys.argv[1] not in commands:

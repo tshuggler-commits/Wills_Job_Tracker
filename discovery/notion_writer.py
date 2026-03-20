@@ -179,6 +179,8 @@ def write_job(scored_job):
     mapped_industry = _map_industry(scored_job.raw.industry)
     if mapped_industry:
         properties["Industry"] = {"select": {"name": mapped_industry}}
+    if scored_job.raw.notes:
+        properties["Notes"] = _rich_text(scored_job.raw.notes)
 
     try:
         result = create_page(NOTION_DATABASE_ID, properties)

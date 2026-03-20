@@ -26,6 +26,7 @@ class RawJob:
     industry: Optional[str] = None
     date_posted: Optional[str] = None
     company_description: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class JobSource(ABC):
